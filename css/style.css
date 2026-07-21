@@ -103,7 +103,7 @@ body {
 
 .site-content {
   flex: 1;
-  padding: 40px;
+  padding: 30px;
 }
 
 .site-footer {
@@ -283,4 +283,31 @@ body {
   height: 70%;
   object-fit: contain;
   cursor: pointer;
+}
+
+.default-title {
+  text-align: center;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.default-text {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.default-minor-text {
+  text-align: center;
+  font-size: 150px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.constellation-image {
+  display: block;
+  margin: 0 auto;
+  max-width: 35vw;
+  opacity: 0.8;
 }
