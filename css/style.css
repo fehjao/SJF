@@ -351,3 +351,54 @@ a:hover {
   max-width: 20vw;
   opacity: 0.6;
 }
+
+.post-it-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 30px; 
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Container Pai: Organiza lado a lado e quebra para a linha de baixo automaticamente */
+.post-it-container {
+  display: flex;
+  flex-wrap: wrap; /* Faz os itens irem para a linha de baixo quando faltar espaço */
+  gap: 24px;       /* Espaçamento entre os post-its (horizontal e vertical) */
+  padding: 20px;   /* Respiro ao redor de todo o conjunto */
+}
+
+/* O Post-it Individual */
+.post-it {
+  position: relative;
+  width: 220px;          /* Largura fixa base */
+  aspect-ratio: 1 / 1;   /* Mantém sempre quadrado (altura igual à largura) */
+  
+  background-color: #f5de9e;
+  padding: 30px 20px 20px 20px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.post-it-pin {
+  position: absolute;
+  top: 0px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: auto;
+  pointer-events: none;
+}
+
+.post-it-text {
+  margin: 0;
+  color: #333333;
+  font-size: 1rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
