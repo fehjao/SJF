@@ -4,7 +4,13 @@ const galleryImages = [
   'gallery/p3.png',
   'gallery/p4.png',
   'gallery/p5.png',
-  'gallery/p6.png'
+  'gallery/p6.png',
+  'gallery/p7.png',
+  'gallery/p8.png',
+  'gallery/p9.png',
+  'gallery/p10.png',
+  'gallery/p11.png',
+  'gallery/p12.png',
 ];
 
 const galleryGrid = document.getElementById('gallery-grid');
@@ -21,6 +27,7 @@ function closeImage() {
 }
 
 function buildGallery() {
+  galleryImages.reverse();
   for (let i = 0; i < galleryImages.length; i++) {
     const src = galleryImages[i];
 
