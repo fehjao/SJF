@@ -51,6 +51,23 @@ function highlightActiveMenuItem() {
   });
 }
 
+let isCoupleImageInTimeOut = false;
+function onCoupleImageClick() {
+  if(isCoupleImageInTimeOut)
+    return;
+  isCoupleImageInTimeOut = true;
+
+  const img = document.getElementById('couple-img');
+  const imagemOriginal = img.src;
+  const imagemNova = 'img/pixel-couple-2.png';
+
+  img.src = imagemNova;
+  setTimeout(() => {
+    img.src = imagemOriginal;
+    isCoupleImageInTimeOut = false;
+  }, 2000);
+}
+
 buildHeader();
 buildMenu();
 buildFooter();
