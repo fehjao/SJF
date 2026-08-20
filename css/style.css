@@ -402,3 +402,114 @@ a:hover {
   line-height: 1.4;
   word-break: break-word;
 }
+
+.timeline {
+  position: relative;
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 40px 0; /* Padding vertical para a linha sobressair no topo e na base */
+}
+/* A Linha Vertical central contínua (vai do topo ao fundo da .timeline) */
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  background-color: #B7A573;
+  transform: translateX(-50%);
+}
+/* Cada linha da timeline */
+.timeline-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 50px;
+  position: relative;
+}
+/* Inverte os lados quando tem a classe .reverse */
+.timeline-item.reverse {
+  flex-direction: row-reverse;
+}
+/* Alinhamento do conteúdo de cada lado */
+.timeline-image {
+  width: 42%;
+  display: flex;
+  justify-content: flex-end; /* Alinha a imagem perto da linha central */
+}
+.timeline-item.reverse .timeline-image {
+  justify-content: flex-start;
+}
+.timeline-content {
+  width: 42%;
+  text-align: left;
+  /* Sem caixa, fundo ou borda quadrada */
+}
+.timeline-item.reverse .timeline-content {
+  text-align: right; /* Opcional: alinha texto à direita quando fica do lado esquerdo */
+}
+/* Imagem menor e com cantos levemente arredondados */
+.timeline-image img {
+  width: 140px;          /* Largura fixa pequena */
+  height: 140px;         /* Altura fixa */
+  object-fit: cover;     /* Mantém proporção da foto */
+  border-radius: 8px;    /* Cantos ligeiramente arredondados */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+/* Texto menor e sem caixas */
+.timeline-content h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #B7A573;
+  margin-bottom: 4px;
+}
+.timeline-content p {
+  font-size: 14px;
+  color: #B7A573;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+/* Marcador (pontinho central sobre a linha) */
+.timeline-marker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background-color: #B7A573;
+  border: 2px solid #FFE5A0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+/* Ajuste Responsivo para telas pequenas (Celulares) */
+@media (max-width: 600px) {
+  .timeline::before {
+    left: 20px;
+  }
+  .timeline-item,
+  .timeline-item.reverse {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 45px;
+    margin-bottom: 35px;
+  }
+  .timeline-image,
+  .timeline-content,
+  .timeline-item.reverse .timeline-image,
+  .timeline-item.reverse .timeline-content {
+    width: 100%;
+    text-align: left;
+    justify-content: flex-start;
+  }
+  .timeline-image img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 8px;
+  }
+  .timeline-marker {
+    left: 20px;
+    top: 15px;
+  }
+}
