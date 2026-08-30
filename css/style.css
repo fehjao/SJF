@@ -513,3 +513,82 @@ a:hover {
     top: 15px;
   }
 }
+
+.tube-container {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.tube-main-player {
+  width: 100%;
+  max-width: 800px;
+}
+
+.video-wrapper {
+  position: relative;
+  background-color: #000;
+  border: 3px solid #B7A573;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.video-wrapper video {
+  width: 100%;
+  height: auto;
+  display: block;
+  cursor: pointer;
+}
+
+.custom-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 15px;
+  background-color: #FFE5A0;
+  border-top: 2px solid #B7A573;
+}
+
+.control-btn {
+  background: transparent;
+  border: 2px solid #B7A573;
+  color: #B7A573;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+  background-color: #B7A573;
+  color: #FFE5A0;
+}
+
+.video-time {
+  font-size: 14px;
+  font-weight: 600;
+  color: #B7A573;
+}
+
+.video-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #B7A573;
+  margin-top: 12px;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .tube-container {
+    flex-direction: column;
+  }
+  .tube-main-player {
+    max-width: 100%;
+  }
+}
