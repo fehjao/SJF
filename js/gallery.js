@@ -17,6 +17,9 @@ const galleryImages = [
   'gallery/p16.png',
   'gallery/p17.png',
   'gallery/p18.png',
+  'gallery/p19.png',
+  'gallery/p20.png',
+  'gallery/p21.png',
 ];
 
 const galleryGrid = document.getElementById('gallery-grid');
