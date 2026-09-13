@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SJF - Busca de Imóveis</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/agency.css">
+  <link rel="icon" type="image/x-icon" href="img/favicon.ico">
+</head>
+<body>
+
+  <div id="site-header-container"></div>
+  <div id="site-menu-container"></div>
+
+  <main class="site-content agency-page">
+    <div class="agency-header">
+      <h1 class="default-title">Busca de Imóveis & Apartamentos</h1>
+      <p class="default-minor-text">Necessário extensão de navegador para ativar CORS nesta página</p>
+    </div>
+
+    <section class="agency-filter-card">
+      <form id="search-form" class="agency-form" onsubmit="return false;">
+        
+        <div class="form-grid">
+          <div class="form-group-location-row">
+            <div class="form-group form-group-uf">
+              <label class="form-label">UF</label>
+              <div class="custom-select-box" id="uf-select-box">
+                <div class="custom-select-trigger" id="uf-select-trigger" tabindex="0">
+                  <span class="custom-select-label" id="uf-selected-label">MG</span>
+                  <span class="custom-select-arrow">▾</span>
+                </div>
+                <div class="custom-select-dropdown">
+                  <div class="custom-select-options custom-scrollbar" id="uf-options-list">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group form-group-city">
+              <label class="form-label">Cidade</label>
+              <div class="custom-select-box" id="city-select-box">
+                <div class="custom-select-trigger" id="city-select-trigger" tabindex="0">
+                  <span class="custom-select-label" id="city-selected-label">Betim</span>
+                  <span class="custom-select-arrow">▾</span>
+                </div>
+                <div class="custom-select-dropdown">
+                  <div class="custom-select-search-box">
+                    <input type="text" id="city-search-input" class="custom-select-search" placeholder="Buscar cidade..." autocomplete="off">
+                  </div>
+                  <div class="custom-select-options custom-scrollbar" id="city-options-list">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group form-group-neighborhoods">
+            <label for="input-neighborhoods" class="form-label">
+              Bairros <span class="label-hint">(separados por vírgula ou vazio para buscar na cidade toda)</span>
+            </label>
+            <input type="text" id="input-neighborhoods" class="form-input" 
+              placeholder="Ex: Cabral, Eldorado, Riacho, Europa..." 
+              value="">
+          </div>
+
+          <div class="form-group">
+            <label for="select-bedrooms" class="form-label">Quartos Mínimos</label>
+            <div class="select-wrapper">
+              <select id="select-bedrooms" class="form-select">
+                <option value="1" selected>1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="select-bathrooms" class="form-label">Banheiros Mínimos</label>
+            <div class="select-wrapper">
+              <select id="select-bathrooms" class="form-select">
+                <option value="1">1+</option>
+                <option value="2" selected>2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="input-min-price" class="form-label">Valor Mínimo</label>
+            <input type="text" id="input-min-price" class="form-input input-currency" placeholder="R$ 0,00" value="">
+          </div>
+
+          <div class="form-group">
+            <label for="input-max-price" class="form-label">Valor Máximo</label>
+            <input type="text" id="input-max-price" class="form-input input-currency" placeholder="R$ 250.000,00" value="">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="btn-search" class="btn btn-primary">
+            <span class="btn-icon">🔍</span>
+            <span class="btn-text">Buscar Imóveis</span>
+          </button>
+          
+          <button type="button" id="btn-export" class="btn btn-secondary" disabled>
+            <span class="btn-icon">📥</span>
+            <span class="btn-text">Exportar CSV</span>
+          </button>
+
+          <a href="https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf" 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             id="btn-extension" 
+             class="btn btn-secondary" 
+             title="Instale a extensão caso queira buscar diretamente pelo navegador">
+            <span class="btn-icon">🧩</span>
+            <span class="btn-text">Extensão</span>
+          </a>
+        </div>
+
+      </form>
+    </section>
+
+    <div id="status-container" class="status-container" style="display: none;">
+      <div class="spinner-box">
+        <div class="spinner"></div>
+      </div>
+      <div class="status-info">
+        <p id="status-message" class="status-message">Iniciando busca...</p>
+        <span id="status-details" class="status-details">Aguarde enquanto os anúncios são consultados</span>
+      </div>
+    </div>
+
+    <div id="results-summary" class="results-summary" style="display: none;">
+      <div class="summary-left">
+        <span id="results-count" class="results-badge">0 imóveis encontrados</span>
+        <span id="filter-applied-info" class="filter-applied-info"></span>
+      </div>
+    </div>
+
+    <div class="table-responsive-wrapper">
+      <table id="results-table" class="agency-table" style="display: none;">
+        <thead>
+          <tr>
+            <th class="th-sortable" data-sort="neighborhood">
+              <span class="th-content">Bairro <span class="sort-icon" id="sort-icon-neighborhood">⇅</span></span>
+            </th>
+            <th>Endereço</th>
+            <th class="th-sortable" data-sort="price">
+              <span class="th-content">Valor <span class="sort-icon" id="sort-icon-price">⇅</span></span>
+            </th>
+            <th class="th-sortable" data-sort="size">
+              <span class="th-content">Tamanho <span class="sort-icon" id="sort-icon-size">⇅</span></span>
+            </th>
+            <th>Condomínio</th>
+            <th>Descrição</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody id="results-tbody">
+        </tbody>
+      </table>
+    </div>
+
+    <template id="row-template">
+      <tr>
+        <td class="cell-neighborhood"></td>
+        <td class="cell-address"></td>
+        <td class="cell-price"></td>
+        <td class="cell-area"></td>
+        <td class="cell-condo"></td>
+        <td><div class="badges-container"></div></td>
+        <td>
+          <a class="btn-table-link" target="_blank" rel="noopener noreferrer">Ver Anúncio ↗</a>
+        </td>
+      </tr>
+    </template>
+
+    <div id="empty-state" class="empty-state">
+      <div id="state-initial">
+        <p class="empty-title">Nenhuma busca realizada ainda</p>
+        <p class="empty-subtitle">Ajuste os filtros acima e clique em <strong>"Buscar Imóveis"</strong> para iniciar a busca.</p>
+      </div>
+
+      <div id="state-no-results" style="display: none;">
+        <p class="empty-title">Nenhum imóvel encontrado com esses filtros</p>
+        <p class="empty-subtitle">Tente aumentar o valor máximo, selecionar menos bairros ou alterar a quantidade mínima de banheiros/quartos.</p>
+      </div>
+
+      <div id="state-cors-error" style="display: none;">
+        <p class="empty-title" style="color: #7b6d44;">Ativação da Extensão Necessária</p>
+        <p class="empty-subtitle">Para buscar diretamente no navegador pelo Zap Imóveis sem precisar de servidor, ative a extensão no topo do seu navegador.</p>
+      </div>
+
+      <div id="state-generic-error" style="display: none;">
+        <p class="empty-title" style="color: #a84242;">Erro na Busca</p>
+        <p class="empty-subtitle" id="error-message-text"></p>
+      </div>
+    </div>
+
+  </main>
+
+  <div id="site-footer-container"></div>
+
+  <script src="js/layout.js"></script>
+  <script src="data/brazilian-locations.js"></script>
+  <script src="js/agency.js"></script>
+</body>
+</html>
