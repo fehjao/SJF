@@ -262,52 +262,35 @@
     return norm.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   }
 
-  function analyzeHighlights(text) {
-    const norm = normalizeText(text);
-    const tags = [];
-
-    const kitchenKeywords = [
-      'cozinha planejada',
-      'armarios na cozinha',
-      'armario na cozinha',
-      'cozinha com armarios',
-      'moveis planejados na cozinha',
-      'cozinha modulada',
-      'planejados na cozinha',
-      'planejada na cozinha'
-    ];
-    if (kitchenKeywords.some(k => norm.includes(k)) || (norm.includes('planejad') && norm.includes('cozinha'))) {
-      tags.push({ key: 'kitchen', label: 'Cozinha planejada', class: 'badge-kitchen' });
+  function formatFee(value) {
+    if (value === null || value === undefined || value === '' || value === '?' || value === '-' || value === 'null' || value === '$undefined') {
+      return '-';
     }
-
-    const waterKeywords = [
-      'agua inclusa',
-      'agua inclusa no condominio',
-      'incluso agua',
-      'taxa de condominio inclui agua',
-      'condominio inclui agua',
-      'condominio com agua inclusa',
-      'agua inclusos',
-      'inclusa agua'
-    ];
-    if (waterKeywords.some(k => norm.includes(k))) {
-      tags.push({ key: 'water', label: 'Água inclusa', class: 'badge-water' });
+    if (typeof value === 'string') {
+      const lower = value.trim().toLowerCase();
+      if (lower === 'isento') return 'Isento';
+      if (lower === 'não informado' || lower === 'nao informado' || lower === '-' || lower === '?' || lower === 'null' || lower === '$undefined') return '-';
+      const cleanDigits = value.replace(/[^\d,\.]/g, '').replace(/\./g, '').replace(',', '.');
+      const num = parseFloat(cleanDigits);
+      if (!isNaN(num)) {
+        if (num > 1) {
+          return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        } else if (num === 0) {
+          return 'Isento';
+        } else if (num === 1) {
+          return '-';
+        }
+      }
+    } else if (typeof value === 'number') {
+      if (value > 1) {
+        return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      } else if (value === 0) {
+        return 'Isento';
+      } else if (value === 1) {
+        return '-';
+      }
     }
-
-    const gasKeywords = [
-      'gas incluso',
-      'gas incluso no condominio',
-      'incluso gas',
-      'taxa de condominio inclui gas',
-      'condominio inclui gas',
-      'condominio com gas incluso',
-      'gas canalizado incluso'
-    ];
-    if (gasKeywords.some(k => norm.includes(k))) {
-      tags.push({ key: 'gas', label: 'Gás incluso', class: 'badge-gas' });
-    }
-
-    return tags;
+    return '-';
   }
 
   function detectNeighborhood(url, title, images, city, uf, targetMap, targetNeighborhoods) {
@@ -370,16 +353,16 @@
       }
     }
 
-    return '?';
+    return '-';
   }
 
   function cleanAddress(street) {
-    if (!street || typeof street !== 'string') return '?';
+    if (!street || typeof street !== 'string') return '-';
     const trimmed = street.trim();
-    if (!trimmed || trimmed.length < 3) return '?';
+    if (!trimmed || trimmed.length < 3) return '-';
     const lower = trimmed.toLowerCase();
     if (lower.startsWith('apartamento') || lower.startsWith('casa para') || lower.startsWith('imovel em') || lower.includes('quartos') || trimmed.length > 100) {
-      return '?';
+      return '-';
     }
     return trimmed;
   }
@@ -411,6 +394,47 @@
 
   function parseListingsFromHtml(html) {
     const items = [];
+    const cardFeesMap = {};
+
+    const cardRegex = /<a\b[^>]*href=[\"']([^\"']*?imovel[^\"]*?-id-(\d+)[^\"']*?)[\"'][^>]*>([\s\S]*?)<\/a>/gi;
+    let cardMatch;
+    while ((cardMatch = cardRegex.exec(html)) !== null) {
+      const id = cardMatch[2];
+      const cardBody = cardMatch[3];
+      let condo = null;
+      let iptu = null;
+      const condM = cardBody.match(/Cond\.\s*(?:R\$\s*([\d\.,]+)|(isento))/i);
+      if (condM) {
+        condo = condM[1] || condM[2];
+      }
+      const iptuM = cardBody.match(/IPTU\s*(?:R\$\s*([\d\.,]+)|(isento))/i);
+      if (iptuM) {
+        iptu = iptuM[1] || iptuM[2];
+      }
+      cardFeesMap[id] = { condo, iptu };
+    }
+
+    const priceBlocks = [
+      ...html.matchAll(/(?:\"id\"|\\\"id\\\"):\"?(\d{8,12})\"?.*?\"prices\":\{\"rental\":(?:null|\{[^\}]*\}),\"sale\":\{([^}]*)\}/gi),
+      ...html.matchAll(/\\\"id\\\":\\\"(\d{8,12})\\\".*?\\\"prices\\\":\{\\\"rental\\\":(?:null|\{[^\}]*\}),\\\"sale\\\":\{([^}]*)\}/gi)
+    ];
+    for (const pb of priceBlocks) {
+      const id = pb[1];
+      const saleObjStr = pb[2];
+      const iptuM = saleObjStr.match(/(?:\"|\\\")iptu(?:\"|\\\"):([0-9\.]+)/);
+      const condoM = saleObjStr.match(/(?:\"|\\\")condominium(?:\"|\\\"):([0-9\.]+)/);
+
+      if (!cardFeesMap[id]) {
+        cardFeesMap[id] = {};
+      }
+      if (cardFeesMap[id].iptu === undefined || cardFeesMap[id].iptu === null) {
+        if (iptuM) cardFeesMap[id].iptu = parseFloat(iptuM[1]);
+      }
+      if (cardFeesMap[id].condo === undefined || cardFeesMap[id].condo === null) {
+        if (condoM) cardFeesMap[id].condo = parseFloat(condoM[1]);
+      }
+    }
+
     const scriptRegex = /<script type="application\/ld\+json">(.*?)<\/script>/gis;
     let match;
 
@@ -442,17 +466,32 @@
             price = typeof prod.offers === 'object' ? prod.offers.price : prod.offers;
           }
 
-          let condo = null;
-          if (prod.additionalProperty) {
-            if (Array.isArray(prod.additionalProperty)) {
-              for (const ap of prod.additionalProperty) {
-                if (ap && ['Condominium Fee', 'condominio', 'taxa de condominio'].includes(ap.name)) {
-                  condo = ap.value;
-                }
+          const rawId = (prod['@id'] || url.split('-id-').pop() || '').replace(/\D/g, '');
+          let condo = cardFeesMap[rawId] ? cardFeesMap[rawId].condo : null;
+          let iptu = cardFeesMap[rawId] ? cardFeesMap[rawId].iptu : null;
+
+          if (!condo && prod.offers && prod.offers.additionalProperty) {
+            const apList = Array.isArray(prod.offers.additionalProperty) ? prod.offers.additionalProperty : [prod.offers.additionalProperty];
+            apList.forEach(ap => {
+              if (ap && ap.name && ap.name.toLowerCase().includes('condominium') && ap.value) {
+                condo = ap.value;
               }
-            } else if (typeof prod.additionalProperty === 'object') {
-              condo = prod.additionalProperty.value;
-            }
+              if (ap && ap.name && ap.name.toLowerCase().includes('iptu') && ap.value) {
+                iptu = ap.value;
+              }
+            });
+          }
+
+          if (!condo && prod.additionalProperty) {
+            const apList = Array.isArray(prod.additionalProperty) ? prod.additionalProperty : [prod.additionalProperty];
+            apList.forEach(ap => {
+              if (ap && ap.name && ap.name.toLowerCase().includes('condominium') && ap.value) {
+                condo = ap.value;
+              }
+              if (ap && ap.name && ap.name.toLowerCase().includes('iptu') && ap.value) {
+                iptu = ap.value;
+              }
+            });
           }
 
           const bathrooms = prod.numberOfBathroomsTotal || prod.numberOfBathrooms || null;
@@ -480,7 +519,8 @@
             title: prod.name || '',
             url: url.split('?')[0],
             price: price ? parseFloat(price) : null,
-            condo: condo ? parseFloat(condo) : null,
+            condo: condo,
+            iptu: iptu,
             bathrooms: bathrooms ? parseInt(bathrooms, 10) : null,
             bedrooms: bedrooms ? parseInt(bedrooms, 10) : null,
             area_m2: floorSize ? parseFloat(floorSize) : null,
@@ -578,7 +618,7 @@
         await new Promise(r => setTimeout(r, 200));
       }
 
-      updateStatus('Analisando descrições e aplicando filtros...', 'Identificando cozinha planejada, água e gás inclusos');
+      updateStatus('Processando anúncios encontrados...', 'Formatando valores e organizando resultados');
 
       const processedResults = [];
 
@@ -592,28 +632,23 @@
           continue;
         }
 
-        const highlights = analyzeHighlights(`${item.title} ${item.description}`);
-
         const formattedPrice = price
           ? price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-          : '?';
+          : '-';
 
-        const formattedCondo = item.condo
-          ? item.condo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-          : '?';
-
-        const formattedArea = item.area_m2 ? `${item.area_m2} m²` : '?';
+        const formattedCondo = formatFee(item.condo);
+        const formattedIptu = formatFee(item.iptu);
+        const formattedArea = item.area_m2 ? `${item.area_m2} m²` : '-';
 
         processedResults.push({
-          neighborhood: detectedNeighborhood || '?',
+          neighborhood: detectedNeighborhood || '-',
           address: cleanAddress(item.street),
           price: formattedPrice,
           rawPrice: price,
           size: formattedArea,
           rawSize: item.area_m2 || 0,
           condo: formattedCondo,
-          highlights: highlights,
-          highlightsText: highlights.length > 0 ? highlights.map(h => h.label).join(', ') : '-',
+          iptu: formattedIptu,
           url: url
         });
       }
@@ -720,21 +755,7 @@
         rowNode.querySelector('.cell-price').textContent = item.price;
         rowNode.querySelector('.cell-area').textContent = item.size;
         rowNode.querySelector('.cell-condo').textContent = item.condo;
-
-        const badgesContainer = rowNode.querySelector('.badges-container');
-        if (item.highlights && item.highlights.length > 0) {
-          item.highlights.forEach(h => {
-            const badgeSpan = document.createElement('span');
-            badgeSpan.className = 'badge ' + h.class;
-            badgeSpan.textContent = h.label;
-            badgesContainer.appendChild(badgeSpan);
-          });
-        } else {
-          const badgeNone = document.createElement('span');
-          badgeNone.className = 'badge-none';
-          badgeNone.textContent = '-';
-          badgesContainer.appendChild(badgeNone);
-        }
+        rowNode.querySelector('.cell-iptu').textContent = item.iptu;
 
         const linkEl = rowNode.querySelector('.btn-table-link');
         linkEl.href = item.url;
@@ -766,24 +787,10 @@
         tdCondo.textContent = item.condo;
         tr.appendChild(tdCondo);
 
-        const tdDesc = document.createElement('td');
-        const badgesDiv = document.createElement('div');
-        badgesDiv.className = 'badges-container';
-        if (item.highlights && item.highlights.length > 0) {
-          item.highlights.forEach(h => {
-            const bSpan = document.createElement('span');
-            bSpan.className = 'badge ' + h.class;
-            bSpan.textContent = h.label;
-            badgesDiv.appendChild(bSpan);
-          });
-        } else {
-          const bNone = document.createElement('span');
-          bNone.className = 'badge-none';
-          bNone.textContent = '-';
-          badgesDiv.appendChild(bNone);
-        }
-        tdDesc.appendChild(badgesDiv);
-        tr.appendChild(tdDesc);
+        const tdIptu = document.createElement('td');
+        tdIptu.className = 'cell-iptu';
+        tdIptu.textContent = item.iptu;
+        tr.appendChild(tdIptu);
 
         const tdLink = document.createElement('td');
         const aLink = document.createElement('a');
@@ -808,14 +815,14 @@
       return;
     }
 
-    const headers = ['Bairro', 'Endereço', 'Valor', 'Tamanho', 'Condomínio', 'Descrição', 'Link'];
+    const headers = ['Bairro', 'Endereço', 'Valor', 'Tamanho', 'Condomínio', 'IPTU', 'Link'];
     const rows = currentResults.map(item => [
       `"${(item.neighborhood || '').replace(/"/g, '""')}"`,
       `"${(item.address || '').replace(/"/g, '""')}"`,
       `"${(item.price || '').replace(/"/g, '""')}"`,
       `"${(item.size || '').replace(/"/g, '""')}"`,
       `"${(item.condo || '').replace(/"/g, '""')}"`,
-      `"${(item.highlightsText || '-').replace(/"/g, '""')}"`,
+      `"${(item.iptu || '').replace(/"/g, '""')}"`,
       `"${(item.url || '').replace(/"/g, '""')}"`
     ]);
 

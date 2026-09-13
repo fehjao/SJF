@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
   <link rel="stylesheet" href="css/agency.css">
   <link rel="icon" type="image/x-icon" href="img/favicon.ico">
 </head>
+
 <body>
 
   <div id="site-header-container"></div>
@@ -21,7 +23,7 @@
 
     <section class="agency-filter-card">
       <form id="search-form" class="agency-form" onsubmit="return false;">
-        
+
         <div class="form-grid">
           <div class="form-group-location-row">
             <div class="form-group form-group-uf">
@@ -47,7 +49,8 @@
                 </div>
                 <div class="custom-select-dropdown">
                   <div class="custom-select-search-box">
-                    <input type="text" id="city-search-input" class="custom-select-search" placeholder="Buscar cidade..." autocomplete="off">
+                    <input type="text" id="city-search-input" class="custom-select-search"
+                      placeholder="Buscar cidade..." autocomplete="off">
                   </div>
                   <div class="custom-select-options custom-scrollbar" id="city-options-list">
                   </div>
@@ -60,9 +63,8 @@
             <label for="input-neighborhoods" class="form-label">
               Bairros <span class="label-hint">(separados por vírgula ou vazio para buscar na cidade toda)</span>
             </label>
-            <input type="text" id="input-neighborhoods" class="form-input" 
-              placeholder="Ex: Cabral, Eldorado, Riacho, Europa..." 
-              value="">
+            <input type="text" id="input-neighborhoods" class="form-input"
+              placeholder="Ex: Cabral, Eldorado, Riacho, Europa..." value="">
           </div>
 
           <div class="form-group">
@@ -96,7 +98,8 @@
 
           <div class="form-group">
             <label for="input-max-price" class="form-label">Valor Máximo</label>
-            <input type="text" id="input-max-price" class="form-input input-currency" placeholder="R$ 250.000,00" value="">
+            <input type="text" id="input-max-price" class="form-input input-currency" placeholder="R$ 250.000,00"
+              value="">
           </div>
         </div>
 
@@ -105,18 +108,15 @@
             <span class="btn-icon">🔍</span>
             <span class="btn-text">Buscar Imóveis</span>
           </button>
-          
+
           <button type="button" id="btn-export" class="btn btn-secondary" disabled>
             <span class="btn-icon">📥</span>
             <span class="btn-text">Exportar CSV</span>
           </button>
 
-          <a href="https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf" 
-             target="_blank" 
-             rel="noopener noreferrer" 
-             id="btn-extension" 
-             class="btn btn-secondary" 
-             title="Instale a extensão caso queira buscar diretamente pelo navegador">
+          <a href="https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf"
+            target="_blank" rel="noopener noreferrer" id="btn-extension" class="btn btn-secondary"
+            title="Instale a extensão caso queira buscar diretamente pelo navegador">
             <span class="btn-icon">🧩</span>
             <span class="btn-text">Extensão</span>
           </a>
@@ -157,7 +157,7 @@
               <span class="th-content">Tamanho <span class="sort-icon" id="sort-icon-size">⇅</span></span>
             </th>
             <th>Condomínio</th>
-            <th>Descrição</th>
+            <th>IPTU</th>
             <th>Link</th>
           </tr>
         </thead>
@@ -173,7 +173,7 @@
         <td class="cell-price"></td>
         <td class="cell-area"></td>
         <td class="cell-condo"></td>
-        <td><div class="badges-container"></div></td>
+        <td class="cell-iptu"></td>
         <td>
           <a class="btn-table-link" target="_blank" rel="noopener noreferrer">Ver Anúncio ↗</a>
         </td>
@@ -183,17 +183,20 @@
     <div id="empty-state" class="empty-state">
       <div id="state-initial">
         <p class="empty-title">Nenhuma busca realizada ainda</p>
-        <p class="empty-subtitle">Ajuste os filtros acima e clique em <strong>"Buscar Imóveis"</strong> para iniciar a busca.</p>
+        <p class="empty-subtitle">Ajuste os filtros acima e clique em <strong>"Buscar Imóveis"</strong> para iniciar a
+          busca.</p>
       </div>
 
       <div id="state-no-results" style="display: none;">
         <p class="empty-title">Nenhum imóvel encontrado com esses filtros</p>
-        <p class="empty-subtitle">Tente aumentar o valor máximo, selecionar menos bairros ou alterar a quantidade mínima de banheiros/quartos.</p>
+        <p class="empty-subtitle">Tente aumentar o valor máximo, selecionar menos bairros ou alterar a quantidade mínima
+          de banheiros/quartos.</p>
       </div>
 
       <div id="state-cors-error" style="display: none;">
         <p class="empty-title" style="color: #7b6d44;">Ativação da Extensão Necessária</p>
-        <p class="empty-subtitle">Para buscar diretamente no navegador pelo Zap Imóveis sem precisar de servidor, ative a extensão no topo do seu navegador.</p>
+        <p class="empty-subtitle">Para buscar diretamente no navegador pelo Zap Imóveis sem precisar de servidor, ative
+          a extensão no topo do seu navegador.</p>
       </div>
 
       <div id="state-generic-error" style="display: none;">
@@ -210,4 +213,5 @@
   <script src="data/brazilian-locations.js"></script>
   <script src="js/agency.js"></script>
 </body>
+
 </html>
