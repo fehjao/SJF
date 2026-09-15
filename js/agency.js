@@ -29,6 +29,7 @@
   const selectBathrooms = document.getElementById('select-bathrooms');
   const inputMinPrice = document.getElementById('input-min-price');
   const inputMaxPrice = document.getElementById('input-max-price');
+  const selectViewMode = document.getElementById('select-view-mode');
 
   const btnSearch = document.getElementById('btn-search');
   const btnExport = document.getElementById('btn-export');
@@ -42,9 +43,15 @@
   const resultsCount = document.getElementById('results-count');
   const filterAppliedInfo = document.getElementById('filter-applied-info');
 
+  const tableWrapper = document.getElementById('table-wrapper');
   const resultsTable = document.getElementById('results-table');
   const resultsTbody = document.getElementById('results-tbody');
   const rowTemplate = document.getElementById('row-template');
+  const resultsCards = document.getElementById('results-cards');
+  const cardTemplate = document.getElementById('card-template');
+
+  const agencyGalleryOverlay = document.getElementById('agency-gallery-overlay');
+  const agencyGalleryOverlayImage = document.getElementById('agency-gallery-overlay-image');
 
   const emptyState = document.getElementById('empty-state');
   const stateInitial = document.getElementById('state-initial');
@@ -52,6 +59,17 @@
   const stateCorsError = document.getElementById('state-cors-error');
   const stateGenericError = document.getElementById('state-generic-error');
   const errorMessageText = document.getElementById('error-message-text');
+
+  function openOverlayImage(src) {
+    if (!agencyGalleryOverlay || !agencyGalleryOverlayImage || !src) return;
+    agencyGalleryOverlayImage.src = src;
+    agencyGalleryOverlay.classList.add('open');
+  }
+
+  function closeOverlayImage() {
+    if (!agencyGalleryOverlay) return;
+    agencyGalleryOverlay.classList.remove('open');
+  }
 
   function showEmptyState(stateName, errorText) {
     emptyState.style.display = 'block';
@@ -198,7 +216,10 @@
 
     document.addEventListener('click', closeAllSelects);
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeAllSelects();
+      if (e.key === 'Escape') {
+        closeAllSelects();
+        closeOverlayImage();
+      }
     });
   }
 
@@ -367,6 +388,23 @@
     return trimmed;
   }
 
+  function cleanDescription(desc) {
+    if (!desc || typeof desc !== 'string') return '';
+    let text = desc;
+    text = text.replace(/<br\s*[\/]?>/gi, '\n');
+    text = text.replace(/<\/p>/gi, '\n\n');
+    text = text.replace(/<[^>]+>/g, '');
+    text = text.replace(/&nbsp;/gi, ' ');
+    text = text.replace(/&amp;/gi, '&');
+    text = text.replace(/&lt;/gi, '<');
+    text = text.replace(/&gt;/gi, '>');
+    text = text.replace(/&quot;/gi, '"');
+    text = text.replace(/&#39;/g, "'");
+    text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    text = text.replace(/\n{3,}/g, '\n\n');
+    return text.trim();
+  }
+
   async function fetchDirectZapPage(targetUrl) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -392,11 +430,85 @@
     }
   }
 
+  function extractDetailsFromPageHtml(html) {
+    let description = '';
+    let images = [];
+
+    const scriptRegex = /<script type="application\/ld\+json">(.*?)<\/script>/gis;
+    let match;
+    while ((match = scriptRegex.exec(html)) !== null) {
+      try {
+        const data = JSON.parse(match[1].trim());
+        let rawList = [];
+        if (Array.isArray(data)) rawList = data;
+        else if (typeof data === 'object' && data !== null) {
+          if (data['@type'] === 'ItemList' && Array.isArray(data.itemListElement)) rawList = data.itemListElement;
+          else rawList = [data];
+        }
+        for (const it of rawList) {
+          const prod = it.item || it;
+          if (prod && typeof prod === 'object') {
+            const cleanDesc = cleanDescription(prod.description);
+            if (cleanDesc && cleanDesc.length > description.length) {
+              description = cleanDesc;
+            }
+            if (prod.image) {
+              const list = Array.isArray(prod.image) ? prod.image : [prod.image];
+              list.forEach(img => {
+                if (typeof img === 'string' && img.startsWith('http') && !images.includes(img)) {
+                  images.push(img);
+                }
+              });
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!description) {
+      const descMatch = html.match(/<div[^>]*data-cy="rp-description-txt"[^>]*>([\s\S]*?)<\/div>/i) ||
+                        html.match(/<p[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/p>/i);
+      if (descMatch) {
+        description = cleanDescription(descMatch[1]);
+      }
+    }
+
+    const htmlImgMatches = [...html.matchAll(/<img[^>]*src=["'](https:\/\/resizedimgs\.zapimoveis\.com\.br\/[^"']+)["']/gi)];
+    htmlImgMatches.forEach(m => {
+      const cleanUrl = m[1].replace(/&amp;/g, '&');
+      if (!images.includes(cleanUrl)) {
+        images.push(cleanUrl);
+      }
+    });
+
+    return { description: cleanDescription(description), images };
+  }
+
+  async function loadItemFullDetails(item, onLoaded) {
+    if (item.fullDetailsLoaded || !item.url) return;
+    try {
+      const pageHtml = await fetchDirectZapPage(item.url);
+      const details = extractDetailsFromPageHtml(pageHtml);
+      if (details.description && (!item.description || details.description.length > item.description.length)) {
+        item.description = cleanDescription(details.description);
+      }
+      if (details.images && details.images.length > 0) {
+        const combined = [...(item.images || [])];
+        details.images.forEach(img => {
+          if (!combined.includes(img)) combined.push(img);
+        });
+        item.images = combined;
+      }
+      item.fullDetailsLoaded = true;
+      if (onLoaded) onLoaded();
+    } catch (err) {}
+  }
+
   function parseListingsFromHtml(html) {
     const items = [];
     const cardFeesMap = {};
 
-    const cardRegex = /<a\b[^>]*href=[\"']([^\"']*?imovel[^\"]*?-id-(\d+)[^\"']*?)[\"'][^>]*>([\s\S]*?)<\/a>/gi;
+    const cardRegex = /<a\b[^>]*href=["']([^"']*?imovel[^"']*?-id-(\d+)[^"']*?)["'][^>]*>([\s\S]*?)<\/a>/gi;
     let cardMatch;
     while ((cardMatch = cardRegex.exec(html)) !== null) {
       const id = cardMatch[2];
@@ -415,14 +527,14 @@
     }
 
     const priceBlocks = [
-      ...html.matchAll(/(?:\"id\"|\\\"id\\\"):\"?(\d{8,12})\"?.*?\"prices\":\{\"rental\":(?:null|\{[^\}]*\}),\"sale\":\{([^}]*)\}/gi),
-      ...html.matchAll(/\\\"id\\\":\\\"(\d{8,12})\\\".*?\\\"prices\\\":\{\\\"rental\\\":(?:null|\{[^\}]*\}),\\\"sale\\\":\{([^}]*)\}/gi)
+      ...html.matchAll(/(?:"id"|\\"id\\"):"?(\d{8,12})"?.*?"prices":\{"rental":(?:null|\{[^\}]*\}),"sale":\{([^}]*)\}/gi),
+      ...html.matchAll(/\\"id\\":\\"(\d{8,12})\\".*?\\"prices\\":\{\\"rental\\":(?:null|\{[^\}]*\}),\\"sale\\":\{([^}]*)\}/gi)
     ];
     for (const pb of priceBlocks) {
       const id = pb[1];
       const saleObjStr = pb[2];
-      const iptuM = saleObjStr.match(/(?:\"|\\\")iptu(?:\"|\\\"):([0-9\.]+)/);
-      const condoM = saleObjStr.match(/(?:\"|\\\")condominium(?:\"|\\\"):([0-9\.]+)/);
+      const iptuM = saleObjStr.match(/(?:"|\\")iptu(?:"|\\"):([0-9\.]+)/);
+      const condoM = saleObjStr.match(/(?:"|\\")condominium(?:"|\\"):([0-9\.]+)/);
 
       if (!cardFeesMap[id]) {
         cardFeesMap[id] = {};
@@ -503,7 +615,7 @@
             street = typeof prod.address === 'object' ? prod.address.streetAddress || '' : '';
           }
 
-          const description = prod.description || '';
+          const description = cleanDescription(prod.description || '');
 
           let images = [];
           if (prod.image) {
@@ -568,8 +680,11 @@
     currentSort = { field: null, direction: 'asc' };
     updateSortIcons();
     resultsTbody.innerHTML = '';
+    if (resultsCards) resultsCards.innerHTML = '';
     emptyState.style.display = 'none';
-    resultsTable.style.display = 'none';
+    if (tableWrapper) tableWrapper.style.display = 'none';
+    if (resultsTable) resultsTable.style.display = 'none';
+    if (resultsCards) resultsCards.style.display = 'none';
     resultsSummary.style.display = 'none';
 
     updateStatus(`Iniciando busca para ${city} (${uf.toUpperCase()})...`, 'Consultando anúncios do Zap Imóveis');
@@ -649,14 +764,18 @@
           rawSize: item.area_m2 || 0,
           condo: formattedCondo,
           iptu: formattedIptu,
-          url: url
+          url: url,
+          title: item.title || '',
+          description: item.description || '',
+          images: item.images || [],
+          fullDetailsLoaded: false
         });
       }
 
       processedResults.sort((a, b) => (a.rawPrice || 0) - (b.rawPrice || 0));
       currentResults = processedResults;
 
-      renderTable(currentResults);
+      renderResults();
 
       resultsCount.textContent = currentResults.length !== 1 ? `${currentResults.length} imóveis encontrados` : `${currentResults.length} imóvel encontrado`;
       filterAppliedInfo.textContent = `UF: ${uf} | Cidade: ${city} | Max: ${inputMaxPrice.value || 'Sem limite'}`;
@@ -708,7 +827,7 @@
     });
 
     updateSortIcons();
-    renderTable(currentResults);
+    renderResults();
   }
 
   function updateSortIcons() {
@@ -738,9 +857,32 @@
     });
   }
 
+  function renderResults() {
+    if (!currentResults || currentResults.length === 0) {
+      if (tableWrapper) tableWrapper.style.display = 'none';
+      if (resultsTable) resultsTable.style.display = 'none';
+      if (resultsCards) resultsCards.style.display = 'none';
+      return;
+    }
+
+    const mode = selectViewMode ? selectViewMode.value : 'compact';
+    if (mode === 'complete') {
+      if (tableWrapper) tableWrapper.style.display = 'none';
+      if (resultsTable) resultsTable.style.display = 'none';
+      if (resultsCards) resultsCards.style.display = 'flex';
+      renderCards(currentResults);
+    } else {
+      if (resultsCards) resultsCards.style.display = 'none';
+      if (tableWrapper) tableWrapper.style.display = 'block';
+      if (resultsTable) resultsTable.style.display = 'table';
+      renderTable(currentResults);
+    }
+  }
+
   function renderTable(results) {
     if (!results || results.length === 0) {
-      resultsTable.style.display = 'none';
+      if (tableWrapper) tableWrapper.style.display = 'none';
+      if (resultsTable) resultsTable.style.display = 'none';
       return;
     }
 
@@ -806,7 +948,128 @@
       }
     });
 
-    resultsTable.style.display = 'table';
+    if (tableWrapper) tableWrapper.style.display = 'block';
+    if (resultsTable) resultsTable.style.display = 'table';
+  }
+
+  function renderCards(results) {
+    if (!resultsCards) return;
+    resultsCards.innerHTML = '';
+
+    results.forEach(item => {
+      if (!cardTemplate || !cardTemplate.content) return;
+      const cardNode = cardTemplate.content.cloneNode(true);
+
+      const nbEl = cardNode.querySelector('.card-cell-neighborhood');
+      const addrEl = cardNode.querySelector('.card-cell-address');
+      const priceEl = cardNode.querySelector('.card-cell-price');
+      const areaEl = cardNode.querySelector('.card-cell-area');
+      const condoEl = cardNode.querySelector('.card-cell-condo');
+      const iptuEl = cardNode.querySelector('.card-cell-iptu');
+      const linkEl = cardNode.querySelector('.card-link');
+
+      if (nbEl) nbEl.textContent = item.neighborhood;
+      if (addrEl) addrEl.textContent = item.address;
+      if (priceEl) priceEl.textContent = item.price;
+      if (areaEl) areaEl.textContent = item.size;
+      if (condoEl) condoEl.textContent = item.condo;
+      if (iptuEl) iptuEl.textContent = item.iptu;
+      if (linkEl) linkEl.href = item.url;
+
+      const descEl = cardNode.querySelector('.card-description-text');
+      const toggleBtn = cardNode.querySelector('.btn-toggle-description');
+
+      function updateDescriptionUI() {
+        if (!descEl) return;
+        const text = item.description || '-';
+        descEl.textContent = text;
+        if (toggleBtn) {
+          if (text && text !== '-' && (text.length > 220 || text.split('\n').length > 5)) {
+            toggleBtn.style.display = 'inline-block';
+            toggleBtn.textContent = descEl.classList.contains('card-description-collapsed') ? 'Ver mais' : 'Ver menos';
+          } else {
+            toggleBtn.style.display = 'none';
+          }
+        }
+      }
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+          if (!descEl) return;
+          const isCollapsed = descEl.classList.toggle('card-description-collapsed');
+          this.textContent = isCollapsed ? 'Ver mais' : 'Ver menos';
+        });
+      }
+
+      updateDescriptionUI();
+
+      const imgEl = cardNode.querySelector('.card-carousel-img');
+      const counterEl = cardNode.querySelector('.card-carousel-counter');
+      const prevBtn = cardNode.querySelector('.btn-carousel-prev');
+      const nextBtn = cardNode.querySelector('.btn-carousel-next');
+      const imgBox = cardNode.querySelector('.card-carousel-image-box');
+
+      let currentImgIndex = 0;
+
+      function updateCarouselUI() {
+        const list = item.images && item.images.length > 0 ? item.images : [];
+        if (list.length > 0) {
+          if (currentImgIndex >= list.length) currentImgIndex = 0;
+          if (currentImgIndex < 0) currentImgIndex = list.length - 1;
+          if (imgEl) imgEl.src = list[currentImgIndex];
+          if (counterEl) counterEl.textContent = `${currentImgIndex + 1} / ${list.length}`;
+          if (prevBtn) prevBtn.disabled = list.length <= 1;
+          if (nextBtn) nextBtn.disabled = list.length <= 1;
+        } else {
+          if (imgEl) imgEl.src = 'img/favicon.ico';
+          if (counterEl) counterEl.textContent = '-';
+          if (prevBtn) prevBtn.disabled = true;
+          if (nextBtn) nextBtn.disabled = true;
+        }
+      }
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const list = item.images && item.images.length > 0 ? item.images : [];
+          if (list.length > 1) {
+            currentImgIndex = (currentImgIndex - 1 + list.length) % list.length;
+            updateCarouselUI();
+          }
+        });
+      }
+
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const list = item.images && item.images.length > 0 ? item.images : [];
+          if (list.length > 1) {
+            currentImgIndex = (currentImgIndex + 1) % list.length;
+            updateCarouselUI();
+          }
+        });
+      }
+
+      if (imgBox) {
+        imgBox.addEventListener('click', function () {
+          const list = item.images && item.images.length > 0 ? item.images : [];
+          if (list.length > 0) {
+            openOverlayImage(list[currentImgIndex]);
+          }
+        });
+      }
+
+      updateCarouselUI();
+
+      if (!item.fullDetailsLoaded) {
+        loadItemFullDetails(item, function () {
+          updateCarouselUI();
+          updateDescriptionUI();
+        });
+      }
+
+      resultsCards.appendChild(cardNode);
+    });
   }
 
   function exportToCsv() {
@@ -855,6 +1118,7 @@
     selectBathrooms.disabled = active;
     inputMinPrice.disabled = active;
     inputMaxPrice.disabled = active;
+    if (selectViewMode) selectViewMode.disabled = active;
 
     if (ufSelectTrigger) ufSelectTrigger.style.pointerEvents = active ? 'none' : 'auto';
     if (citySelectTrigger) citySelectTrigger.style.pointerEvents = active ? 'none' : 'auto';
@@ -874,6 +1138,18 @@
 
     btnSearch.addEventListener('click', executeSearch);
     btnExport.addEventListener('click', exportToCsv);
+
+    if (selectViewMode) {
+      selectViewMode.addEventListener('change', function () {
+        if (currentResults && currentResults.length > 0) {
+          renderResults();
+        }
+      });
+    }
+
+    if (agencyGalleryOverlay) {
+      agencyGalleryOverlay.addEventListener('click', closeOverlayImage);
+    }
 
     document.querySelectorAll('.th-sortable').forEach(th => {
       th.addEventListener('click', function () {

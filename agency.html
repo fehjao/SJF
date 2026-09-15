@@ -140,10 +140,19 @@
         <span id="results-count" class="results-badge">0 imóveis encontrados</span>
         <span id="filter-applied-info" class="filter-applied-info"></span>
       </div>
+      <div class="summary-right">
+        <label for="select-view-mode" class="view-mode-label">Modo:</label>
+        <div class="select-wrapper select-wrapper-compact">
+          <select id="select-view-mode" class="form-select select-view-mode">
+            <option value="compact" selected>Compacto</option>
+            <option value="complete">Completo</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <div class="table-responsive-wrapper">
-      <table id="results-table" class="agency-table" style="display: none;">
+    <div class="table-responsive-wrapper" id="table-wrapper" style="display: none;">
+      <table id="results-table" class="agency-table">
         <thead>
           <tr>
             <th class="th-sortable" data-sort="neighborhood">
@@ -166,6 +175,9 @@
       </table>
     </div>
 
+    <div id="results-cards" class="agency-cards-container" style="display: none;">
+    </div>
+
     <template id="row-template">
       <tr>
         <td class="cell-neighborhood"></td>
@@ -178,6 +190,57 @@
           <a class="btn-table-link" target="_blank" rel="noopener noreferrer">Ver Anúncio ↗</a>
         </td>
       </tr>
+    </template>
+
+    <template id="card-template">
+      <article class="property-card">
+        <div class="card-carousel-wrapper">
+          <div class="card-carousel-controls">
+            <button type="button" class="btn-carousel btn-carousel-prev" title="Foto anterior">‹</button>
+            <div class="card-carousel-image-box">
+              <img src="" alt="Foto do imóvel" class="card-carousel-img" loading="lazy">
+              <span class="card-carousel-counter">0 / 0</span>
+            </div>
+            <button type="button" class="btn-carousel btn-carousel-next" title="Próxima foto">›</button>
+          </div>
+        </div>
+
+        <div class="card-description-section">
+          <h3 class="card-section-title">Descrição</h3>
+          <div class="card-description-text card-description-collapsed"></div>
+          <button type="button" class="btn-toggle-description" style="display: none;">Ver mais</button>
+        </div>
+
+        <div class="card-details-grid">
+          <div class="card-detail-item">
+            <span class="card-detail-label">Bairro</span>
+            <span class="card-detail-value card-cell-neighborhood"></span>
+          </div>
+          <div class="card-detail-item">
+            <span class="card-detail-label">Endereço</span>
+            <span class="card-detail-value card-cell-address"></span>
+          </div>
+          <div class="card-detail-item">
+            <span class="card-detail-label">Valor</span>
+            <span class="card-detail-value card-cell-price"></span>
+          </div>
+          <div class="card-detail-item">
+            <span class="card-detail-label">Tamanho</span>
+            <span class="card-detail-value card-cell-area"></span>
+          </div>
+          <div class="card-detail-item">
+            <span class="card-detail-label">Condomínio</span>
+            <span class="card-detail-value card-cell-condo"></span>
+          </div>
+          <div class="card-detail-item">
+            <span class="card-detail-label">IPTU</span>
+            <span class="card-detail-value card-cell-iptu"></span>
+          </div>
+          <div class="card-detail-item card-detail-action">
+            <a class="btn-table-link card-link" target="_blank" rel="noopener noreferrer">Ver Anúncio ↗</a>
+          </div>
+        </div>
+      </article>
     </template>
 
     <div id="empty-state" class="empty-state">
@@ -206,6 +269,10 @@
     </div>
 
   </main>
+
+  <div class="gallery-overlay" id="agency-gallery-overlay">
+    <img src="" alt="Foto ampliada" class="gallery-overlay-image" id="agency-gallery-overlay-image">
+  </div>
 
   <div id="site-footer-container"></div>
 
