@@ -39,4 +39,9 @@ const watchedData = [
     "image": "img/watched/watched-mutiny.png",
     "description": "Foi um momento muito bom, independente que tivemos que sair perto do final. Esse careca é brabo!"
   },
+  {
+    "title": "Fullmetal Alchemist Brotherhood",
+    "image": "img/watched/watched-fullmetal.png",
+    "description": "Esse foi bem longo. Foi muito bom dividir esse tempo juntos por todas essas noites."
+  },
 ];
