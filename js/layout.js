@@ -25,7 +25,6 @@ function buildMenu() {
         <li class="menu-item"><a href="dating.html" class="menu-link">04/09</a></li>
         <li class="menu-item"><a href="watched.html" class="menu-link">Assistidos</a></li>
         <li class="menu-item"><a href="memorial.html" class="menu-link">Memorial</a></li>
-        <li class="menu-item"><a href="agency.html" class="menu-link">Imóveis</a></li>
       </ul>
     </nav>
   `;
