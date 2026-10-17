@@ -21,4 +21,7 @@ const galleryImages = [
   'gallery/p20.png',
   'gallery/p21.png',
   'gallery/p22.png',
+  'gallery/p23.png',
+  'gallery/p24.png',
+  'gallery/p25.png',
 ];
