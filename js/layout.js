@@ -24,6 +24,7 @@ function buildMenu() {
         <li class="menu-item"><a href="potato.html" class="menu-link">23/05</a></li>
         <li class="menu-item"><a href="dating.html" class="menu-link">04/09</a></li>
         <li class="menu-item"><a href="watched.html" class="menu-link">Assistidos</a></li>
+        <li class="menu-item"><a href="word-search.html" class="menu-link">Caça Palavras</a></li>
         <li class="menu-item"><a href="memorial.html" class="menu-link">Memorial</a></li>
       </ul>
     </nav>
